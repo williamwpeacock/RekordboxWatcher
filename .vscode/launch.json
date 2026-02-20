@@ -1,0 +1,11 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "debugpy",
+            "request": "launch",
+            "name": "Launch Rekordbox Watcher",
+            "program": "${workspaceFolder}\\main.py"
+        }
+    ]
+}
