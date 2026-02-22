@@ -63,7 +63,7 @@ class RekordboxWatcher(BaseModel):
     def _stop_recording(self):
         self.recording_start_time = -1
 
-    def _extract_deck_snapshot(self, deck_config, image):
+    def _extract_deck_snapshot(self, deck_config, image, last_deck_snapshot: DeckSnapshot):
         is_playing = deck_config.is_playing.extract_from_image(image)
         if not is_playing:
             return None
@@ -75,15 +75,12 @@ class RekordboxWatcher(BaseModel):
         song = SongSnapshot(
             name=deck_config.song.extract_from_image(image),
             artist=deck_config.artist.extract_from_image(image)
-        )
+        ) if last_deck_snapshot is None else last_deck_snapshot.song
         if song.name == "Not Loaded." and song.artist == "":
             return None
 
         return DeckSnapshot(
-            song=SongSnapshot(
-                name=deck_config.song.extract_from_image(image),
-                artist=deck_config.artist.extract_from_image(image)
-            ),
+            song=song,
             time=TimeSnapshot(
                 value=deck_config.time.extract_from_image(image),
                 unit="seconds"
@@ -98,18 +95,25 @@ class RekordboxWatcher(BaseModel):
         if layout is None:
             return None
 
-        snapshot = Snapshot(decks=[], bpm=-1, time=TimeSnapshot(value=time, unit="seconds"))
+        last_snapshot = self.snapshots[-1] if self._is_recording() else None
 
-        for deck_config in layout.decks:
-            snapshot.decks.append(self._extract_deck_snapshot(deck_config, image))
+        decks = []
+        bpm = -1
+        for deck_idx, deck_config in enumerate(layout.decks):
+            last_deck_snapshot = last_snapshot.decks[deck_idx] if last_snapshot is not None else None
+            decks.append(self._extract_deck_snapshot(deck_config, image, last_deck_snapshot))
 
             if deck_config.is_master.extract_from_image(image):
-                snapshot.bpm = deck_config.bpm.extract_from_image(image)
+                bpm = deck_config.bpm.extract_from_image(image)
 
-        if all([(deck is None) for deck in snapshot.decks]):
+        if all([(deck is None) for deck in decks]):
             return None
 
-        return snapshot
+        return Snapshot(
+            decks=decks,
+            bpm=bpm,
+            time=TimeSnapshot(value=time, unit="seconds")
+        )
 
     def look(self) -> Optional[Snapshot]:
         current_time = np.round(time.time(), 2)
