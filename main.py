@@ -4,9 +4,12 @@ import json
 import time
 import numpy as np
 import psutil
+import logging
 
-from layout import load_from_json, Config
+from layout import load_from_json, Config, DeckConfig
 from snapshot import *
+
+logger = logging.getLogger(__name__)
 
 def is_rekordbox_running():
     return ("rekordbox.exe" in (p.name() for p in psutil.process_iter()))
@@ -16,12 +19,13 @@ class RekordboxWatcher(BaseModel):
     num_decks: int
 
     def __init__(self, config_path: str = "bounding_boxes.json"):
+        logger.info(f"Creating RekordboxWatcher using config at: {config_path}")
         super().__init__(
             config = load_from_json(config_path),
             num_decks = 4
         )
 
-    def _extract_deck_snapshot(self, deck_config, image):
+    def _extract_deck_snapshot(self, deck_config: DeckConfig, image) -> Optional[DeckSnapshot]:
         is_playing = deck_config.is_playing.extract_from_image(image)
         if not is_playing:
             return None
@@ -47,7 +51,7 @@ class RekordboxWatcher(BaseModel):
             eq=EQSnapshot(high=0, medium=0, low=deck_config.eq.low.extract_from_image(image))
         )
 
-    def _extract_snapshot(self, time):
+    def _extract_snapshot(self, time: float) -> Optional[Snapshot]:
         image = pyautogui.screenshot()
         layout = self.config.get_current_layout(image)
         if layout is None:
@@ -78,26 +82,33 @@ class RekordboxWatcher(BaseModel):
     def watch(self) -> List[Snapshot]:
         snapshots: List[Snapshot] = []
 
+        logger.info(f"Starting watch process.")
         while is_rekordbox_running():
             snapshot = self.look()
             if snapshot is not None:
                 snapshots.append(snapshot)
+                logger.info(f"Extracted snapshot: {snapshot}")
+
+        logger.info("No rekordbox process found.")
 
         return snapshots
 
 if __name__ == "__main__":
     config_path = "bounding_boxes.json"
     output_dir = "out/"
+    logging_level = logging.INFO
 
-    dt = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path = f"{output_dir}/session_{dt}.json"
+    logger.setLevel(logging_level)
 
     watcher = RekordboxWatcher(
         config_path = "bounding_boxes.json"
     )
     snapshots = watcher.watch()
 
-    print(f"Saving to: {output_path}")
+    dt = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = f"{output_dir}/session_{dt}.json"
+
+    logger.info(f"Saving to: {output_path}")
     with open(output_path, "w") as f:
         f.write(
             json.dumps(
@@ -105,4 +116,4 @@ if __name__ == "__main__":
                 indent=4
             )
         )
-    print("Done!")
+    logger.info("Done!")
