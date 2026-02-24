@@ -9,59 +9,67 @@ from pydantic import model_serializer
 from layout import load_from_json, Config
 from snapshot import *
 
+def get_date_time_str():
+    return datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+def save(output_path, content):
+        print(f"Saved to: {output_path}")
+        with open(output_path, "a") as f:
+            f.write(
+                json.dumps(
+                    content,
+                    indent=4
+                )
+            )
+        print("Done!")
+
 # Extracts data from rekordbox and tracks it using RekordboxRecording
 class RekordboxWatcher(BaseModel):
     snapshots: List[Snapshot]
+    recording_start_time: float
 
     config: Config
     num_decks: int
-    output_dir: str
-
-    recording_start_time: float
+    output_path: str
+    is_recording: bool
 
     def __init__(self, config_path: str = "bounding_boxes.json", output_dir: str = "out"):
+        dt=datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = f"recording_{dt}.json"
+
         super().__init__(
             snapshots = [],
+            recording_start_time = -1,
             config = load_from_json(config_path),
             num_decks = 4,
-            output_dir = output_dir,
-            recording_start_time = -1
+            output_path = f"{output_dir}/{file_name}",
+            is_recording = False
         )
 
     @model_serializer(mode="wrap")
     def _serialize(self, handler):
         d = handler(self)
         del d['config']
+        del d['output_path']
+        del d['is_recording']
         return d
 
     def _save_recording(self):
-        dt=datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_name = f"{self.output_dir}/mix_{dt}.json"
-
-        print(f"Saved recording to: {file_name}")
-        with open(file_name, "w") as f:
-            f.write(
-                json.dumps(
-                    self.model_dump(mode="python"),
-                    indent=4
-                )
-            )
-        print("Done!")
-
-    def _is_recording(self):
-        return self.recording_start_time > 0
+        save(self.output_path, self.model_dump(mode="python"))
 
     def _start_recording(self, start_time: float):
         print("Starting recording...")
         self.recording_start_time = start_time
         self.snapshots = []
+        self.is_recording = True
 
     def _record_snapshot(self, snapshot: Snapshot):
         snapshot.time.value -= self.recording_start_time
         self.snapshots.append(snapshot)
 
     def _stop_recording(self):
-        self.recording_start_time = -1
+        print("Stopping recording...")
+        self.is_recording = False
 
     def _extract_deck_snapshot(self, deck_config, image, last_deck_snapshot: DeckSnapshot):
         is_playing = deck_config.is_playing.extract_from_image(image)
@@ -95,7 +103,7 @@ class RekordboxWatcher(BaseModel):
         if layout is None:
             return None
 
-        last_snapshot = self.snapshots[-1] if self._is_recording() else None
+        last_snapshot = self.snapshots[-1] if self.is_recording else None
 
         decks = []
         bpm = -1
@@ -120,20 +128,20 @@ class RekordboxWatcher(BaseModel):
 
         snapshot = self._extract_snapshot(current_time)
         if snapshot is None:
-            if self._is_recording():
+            if self.is_recording:
                 self._stop_recording()
             return None
 
-        if not self._is_recording():
+        if not self.is_recording:
             self._start_recording(current_time)
 
         self._record_snapshot(snapshot)
 
         return snapshot
 
-    def watch(self, save = True):
+    def watch(self, save = True) -> List[Snapshot]:
         # wait to start
-        while not self._is_recording():
+        while not self.is_recording:
             snapshot = self.look()
 
         # record
