@@ -7,7 +7,10 @@ import psutil
 import logging
 
 from layout import load_from_json, Config, DeckConfig
-from snapshot import *
+from cc_core import Snapshot, DeckSnapshot, EQSnapshot, SongIdentifier, TimeSeconds
+
+from pydantic import BaseModel
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +37,7 @@ class RekordboxWatcher(BaseModel):
         if volume == 0:
             return None
 
-        song = SongSnapshot(
+        song = SongIdentifier(
             name=deck_config.song.extract_from_image(image),
             artist=deck_config.artist.extract_from_image(image)
         )
@@ -43,9 +46,8 @@ class RekordboxWatcher(BaseModel):
 
         return DeckSnapshot(
             song=song,
-            time=TimeSnapshot(
-                value=deck_config.time.extract_from_image(image),
-                unit="seconds"
+            time=TimeSeconds(
+                value=deck_config.time.extract_from_image(image)
             ),
             volume=volume,
             eq=EQSnapshot(high=0, medium=0, low=deck_config.eq.low.extract_from_image(image))
@@ -71,7 +73,7 @@ class RekordboxWatcher(BaseModel):
         return Snapshot(
             decks=decks,
             bpm=bpm,
-            time=TimeSnapshot(value=time, unit="seconds")
+            time=TimeSeconds(time)
         )
 
     def look(self) -> Optional[Snapshot]:
