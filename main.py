@@ -5,6 +5,7 @@ import time
 import numpy as np
 import psutil
 import logging
+import requests
 
 from layout import load_from_json, Config, DeckConfig
 from cc_core import Snapshot, DeckSnapshot, EQSnapshot, SongIdentifier, TimeSeconds
@@ -76,26 +77,33 @@ class RekordboxWatcher(BaseModel):
             time=TimeSeconds(time)
         )
 
+    def _transmit(self, api_endpoint: str, snapshot: Snapshot):
+        requests.post(api_endpoint, json = snapshot.model_dump(mode="python"))
+
     def look(self) -> Optional[Snapshot]:
         current_time = np.round(time.time(), 2)
 
         return self._extract_snapshot(current_time)
 
-    def watch(self) -> List[Snapshot]:
+    def watch(self, api_endpoint = None) -> List[Snapshot]:
         snapshots: List[Snapshot] = []
 
         logger.info(f"Starting watch process.")
         while is_rekordbox_running():
             snapshot = self.look()
             if snapshot is not None:
-                snapshots.append(snapshot)
                 logger.info(f"Extracted snapshot: {snapshot}")
+                if api_endpoint is not None:
+                    self._transmit(api_endpoint, snapshot)
+                else:
+                    snapshots.append(snapshot)
 
         logger.info("No rekordbox process found.")
 
         return snapshots
 
 if __name__ == "__main__":
+    api_endpoint = "http://127.0.0.1:8000/incoming_snapshot"
     config_path = "bounding_boxes.json"
     output_dir = "out/"
     logging_level = logging.INFO
@@ -105,17 +113,18 @@ if __name__ == "__main__":
     watcher = RekordboxWatcher(
         config_path = "bounding_boxes.json"
     )
-    snapshots = watcher.watch()
+    snapshots = watcher.watch(api_endpoint)
 
-    dt = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path = f"{output_dir}/session_{dt}.json"
+    if len(snapshots) > 0:
+        dt = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = f"{output_dir}/session_{dt}.json"
 
-    logger.info(f"Saving to: {output_path}")
-    with open(output_path, "w") as f:
-        f.write(
-            json.dumps(
-                [snapshot.model_dump(mode="python") for snapshot in snapshots],
-                indent=4
+        logger.info(f"Saving to: {output_path}")
+        with open(output_path, "w") as f:
+            f.write(
+                json.dumps(
+                    [snapshot.model_dump(mode="python") for snapshot in snapshots],
+                    indent=4
+                )
             )
-        )
-    logger.info("Done!")
+        logger.info("Done!")
