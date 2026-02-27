@@ -78,7 +78,10 @@ class RekordboxWatcher(BaseModel):
         )
 
     def _transmit(self, api_endpoint: str, snapshot: Snapshot):
-        requests.post(api_endpoint, json = snapshot.model_dump(mode="python"))
+        try:
+            requests.post(api_endpoint, json = snapshot.model_dump(mode="python"))
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Connection error occurred when transmitting snapshot: {e}")
 
     def look(self) -> Optional[Snapshot]:
         current_time = np.round(time.time(), 2)
