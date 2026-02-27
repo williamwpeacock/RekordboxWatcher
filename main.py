@@ -103,21 +103,28 @@ class RekordboxWatcher(BaseModel):
         return snapshots
 
 if __name__ == "__main__":
-    api_endpoint = "http://127.0.0.1:8000/incoming_snapshot"
-    config_path = "bounding_boxes.json"
-    output_dir = "out/"
-    logging_level = logging.INFO
+    import argparse
 
-    logger.setLevel(logging_level)
+    parser = argparse.ArgumentParser(
+                    prog='ProgramName',
+                    description='What the program does',
+                    epilog='Text at the bottom of help')
+
+    parser.add_argument('--config_path', default="bounding_boxes.json")
+    parser.add_argument('--api_endpoint', default=None)
+    parser.add_argument('--output_dir', default="out/")
+    args = parser.parse_args()
+
+    logger.setLevel(logging.INFO)
 
     watcher = RekordboxWatcher(
-        config_path = "bounding_boxes.json"
+        config_path = args.config_path
     )
-    snapshots = watcher.watch(api_endpoint)
+    snapshots = watcher.watch(args.api_endpoint)
 
     if len(snapshots) > 0:
         dt = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = f"{output_dir}/session_{dt}.json"
+        output_path = f"{args.output_dir}/session_{dt}.json"
 
         logger.info(f"Saving to: {output_path}")
         with open(output_path, "w") as f:
