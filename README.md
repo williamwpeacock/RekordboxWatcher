@@ -25,6 +25,3 @@ python main.py --api_endpoint "127.0.0.1:8000"
 - Investigate synchronising screenshot taking with master BPM
 - Investigate extraction of values directly from memory
 - Improve this README!
-
-## Known bugs
-- (Sometimes) crashes when rekordbox screen covered
