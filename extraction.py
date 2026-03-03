@@ -106,8 +106,14 @@ class BPMExtraction(NumberExtraction):
         text = super()._extract_from_image(image)
         # format: (X)XX.XX
         text = text.replace('.', '')
+        if len(text) < 3:
+            return -1
 
-        return float(f"{text[:-2]}.{text[-2:]}")
+        bpm_str = f"{text[:-2]}.{text[-2:]}"
+        try:
+            return float(bpm_str)
+        except:
+            return -1
 
 class IsMasterExtraction(ColorExtraction):
     def _extract_from_image(self, image) -> bool:
