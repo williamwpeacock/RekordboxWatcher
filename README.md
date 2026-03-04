@@ -19,8 +19,6 @@ python main.py --api_endpoint "127.0.0.1:8000"
 - Support for different layouts and screen dimensions
 - Implement check for rekordbox on screen
 - Refactor into Python module
-- Refactor to always extract songs when loaded and track is_playing value
-- Optimise by saving previous state and only extracting values when necessary
 - Investigate adding options for more control on extraction and transmission of data
 - Investigate synchronising screenshot taking with master BPM
 - Investigate extraction of values directly from memory
