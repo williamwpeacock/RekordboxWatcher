@@ -90,6 +90,11 @@ class ClosestTextExtraction(TextExtraction):
 
 # Specific implementations
 
+class IsLoadedExtraction(ColorExtraction):
+    def _extract_from_image(self, image) -> bool:
+        color = super()._extract_from_image(image)
+        return not (color[0] > color[2])
+
 class TimeExtraction(NumberExtraction):
     def _extract_from_image(self, image) -> float:
         text = super()._extract_from_image(image)

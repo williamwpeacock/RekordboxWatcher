@@ -3,7 +3,7 @@ import json
 from pydantic import BaseModel
 from typing import List, Optional
 
-from extraction import TextExtraction, BPMExtraction, TimeExtraction, IsMasterExtraction, IsPlayingExtraction, ModeExtraction, LayoutExtraction, VolumeExtraction, EQExtraction
+from extraction import TextExtraction, BPMExtraction, TimeExtraction, IsMasterExtraction, IsPlayingExtraction, ModeExtraction, LayoutExtraction, VolumeExtraction, EQExtraction, IsLoadedExtraction
 
 def load_from_json(json_path):
     with open(json_path, "r") as f:
@@ -26,6 +26,7 @@ class EQConfig(BaseModel):
 
 class DeckConfig(BaseModel):
     song: TextExtraction
+    is_loaded: IsLoadedExtraction
     artist: TextExtraction
     is_master: IsMasterExtraction
     bpm: BPMExtraction
@@ -38,6 +39,7 @@ class DeckConfig(BaseModel):
     def from_json(json_obj):
         return DeckConfig(
             song=TextExtraction.from_json(json_obj["song"]),
+            is_loaded=IsLoadedExtraction.from_json(json_obj["song"]),
             artist=TextExtraction.from_json(json_obj["artist"]),
             is_master=IsMasterExtraction.from_json(json_obj["is_master"]),
             bpm=BPMExtraction.from_json(json_obj["bpm"]),
