@@ -2,7 +2,7 @@ import pytesseract
 import numpy as np
 import cv2
 from PIL import Image
-from fuzzywuzzy import process
+from fuzzywuzzy import process, utils
 
 from pydantic import BaseModel
 from typing import Tuple
@@ -20,7 +20,10 @@ def get_high_contrast_image(image):
     return Image.fromarray(thr)
 
 def closest_string(s, options):
-    return process.extractOne(s, options)[0]
+    if utils.full_process(s):
+        return process.extractOne(s, options)[0]
+    else:
+        return ""
 
 # Class definitions
 
