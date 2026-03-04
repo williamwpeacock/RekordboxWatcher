@@ -29,32 +29,48 @@ class RekordboxWatcher(BaseModel):
             num_decks = 4
         )
 
-    def _extract_deck_snapshot(self, deck_config: DeckConfig, image) -> Optional[DeckSnapshot]:
-        is_playing = deck_config.is_playing.extract_from_image(image)
-        if not is_playing:
+    def _extract_song(self, deck_config: DeckConfig, image) -> Optional[SongIdentifier]:
+        is_loaded = deck_config.is_loaded.extract_from_image(image)
+        if not is_loaded:
             return None
 
-        volume = deck_config.volume.extract_from_image(image)
-        if volume == 0:
-            return None
-
-        song = SongIdentifier(
+        return SongIdentifier(
             name=deck_config.song.extract_from_image(image),
             artist=deck_config.artist.extract_from_image(image)
         )
-        if song.name == "Not Loaded." and song.artist == "":
-            return None
+
+    def _extract_deck_snapshot(self, deck_config: DeckConfig, image, previous_deck_snapshot: DeckSnapshot = None) -> DeckSnapshot:
+        is_playing = deck_config.is_playing.extract_from_image(image)
+        if is_playing:
+            # song can only change if deck is not playing unless deck reaches the end of song
+            # in this case assume deck is paused before new song starts playing
+            if previous_deck_snapshot is None:
+                song = self._extract_song(deck_config, image)
+            else:
+                song = previous_deck_snapshot.song
+
+            # check for mixer updates
+            volume = deck_config.volume.extract_from_image(image)
+            time = deck_config.time.extract_from_image(image)
+            eq = EQSnapshot(high=0, medium=0, low=deck_config.eq.low.extract_from_image(image))
+        else:
+            # check for song changes
+            song = self._extract_song(deck_config, image)
+
+            # mixer updates don't matter if no song is playing
+            volume = 0
+            time = 0
+            eq = EQSnapshot(high=0, medium=0, low=0)
 
         return DeckSnapshot(
             song=song,
-            time=TimeSeconds(
-                value=deck_config.time.extract_from_image(image)
-            ),
+            is_playing=bool(is_playing),
+            time=TimeSeconds(value=time),
             volume=volume,
-            eq=EQSnapshot(high=0, medium=0, low=deck_config.eq.low.extract_from_image(image))
+            eq=eq
         )
 
-    def _extract_snapshot(self, time: float) -> Optional[Snapshot]:
+    def _extract_snapshot(self, time: float, previous_snapshot: Optional[Snapshot] = None) -> Optional[Snapshot]:
         image = pyautogui.screenshot()
         layout = self.config.get_current_layout(image)
         if layout is None:
@@ -62,13 +78,15 @@ class RekordboxWatcher(BaseModel):
 
         decks = []
         bpm = -1
-        for deck_config in layout.decks:
-            decks.append(self._extract_deck_snapshot(deck_config, image))
+        for i, deck_config in enumerate(layout.decks):
+            previous_deck_snapshot = previous_snapshot.decks[i] if previous_snapshot is not None else None
+            decks.append(self._extract_deck_snapshot(deck_config, image, previous_deck_snapshot))
 
-            if deck_config.is_master.extract_from_image(image):
+            if bpm == -1 and deck_config.is_master.extract_from_image(image):
                 bpm = deck_config.bpm.extract_from_image(image)
 
-        if all([(deck is None) for deck in decks]):
+        # snapshot is considered empty if no songs loaded
+        if all([(deck.song is None) for deck in decks]):
             return None
 
         return Snapshot(
@@ -83,17 +101,18 @@ class RekordboxWatcher(BaseModel):
         except requests.exceptions.ConnectionError as e:
             logger.error(f"Connection error occurred when transmitting snapshot: {e}")
 
-    def look(self) -> Optional[Snapshot]:
+    def look(self, previous_snapshot: Optional[Snapshot] = None) -> Optional[Snapshot]:
         current_time = np.round(time.time(), 2)
 
-        return self._extract_snapshot(current_time)
+        return self._extract_snapshot(current_time, previous_snapshot)
 
     def watch(self, api_endpoint = None) -> List[Snapshot]:
         snapshots: List[Snapshot] = []
+        snapshot: Optional[Snapshot] = None
 
         logger.info(f"Starting watch process.")
         while is_rekordbox_running():
-            snapshot = self.look()
+            snapshot = self.look(snapshot)
             if snapshot is not None:
                 logger.info(f"Extracted snapshot: {snapshot}")
                 if api_endpoint is not None:
