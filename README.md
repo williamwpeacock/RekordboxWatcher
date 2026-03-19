@@ -18,7 +18,6 @@ python main.py --api_endpoint "127.0.0.1:8000"
 - EQ value extraction
 - Support for different layouts and screen dimensions
 - Implement check for rekordbox on screen
-- Refactor into Python module
 - Investigate adding options for more control on extraction and transmission of data
 - Investigate synchronising screenshot taking with master BPM
 - Investigate extraction of values directly from memory
