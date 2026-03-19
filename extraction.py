@@ -49,8 +49,8 @@ class BoundingBox(BaseModel):
     def extract_from_image(self, image):
         return Image.fromarray(
             np.array(image)[int(min(self.top_left.y, self.bottom_right.y)) : int(max(self.top_left.y, self.bottom_right.y)),
-                            int(min(self.top_left.x, self.bottom_right.x)) : int(max(self.top_left.x, self.bottom_right.x))],
-                            "RGB")
+                            int(min(self.top_left.x, self.bottom_right.x)) : int(max(self.top_left.x, self.bottom_right.x))]) #,
+                            # "RGB")
 
 class ExtractionArea(BaseModel):
     bb: BoundingBox
