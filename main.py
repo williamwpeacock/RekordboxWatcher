@@ -5,11 +5,14 @@ import time
 import psutil
 import logging
 import requests
+import os
 
 from layout import load_from_json, Config, DeckConfig
 from cc_core import Snapshot, DeckSnapshot, EQSnapshot, SongIdentifier, TimeSeconds
 
 from typing import List, Optional
+
+DEFAULT_CONFIG_PATH = f"{os.path.dirname(__file__)}/bounding_boxes.json"
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +23,7 @@ class RekordboxWatcher:
     config: Config
     num_decks: int
 
-    def __init__(self, config_path: str = "bounding_boxes.json"):
+    def __init__(self, config_path: str = DEFAULT_CONFIG_PATH):
         logger.info(f"Creating RekordboxWatcher using config at: {config_path}")
         self.config = load_from_json(config_path)
         self.num_decks = 4
@@ -128,7 +131,7 @@ if __name__ == "__main__":
                     description='What the program does',
                     epilog='Text at the bottom of help')
 
-    parser.add_argument('--config_path', default="bounding_boxes.json")
+    parser.add_argument('--config_path', default=DEFAULT_CONFIG_PATH)
     parser.add_argument('--api_endpoint', default=None)
     parser.add_argument('--output_dir', default="out/")
     args = parser.parse_args()
