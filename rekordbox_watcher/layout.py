@@ -3,7 +3,7 @@ import json
 from pydantic import BaseModel
 from typing import List, Optional
 
-from extraction import TextExtraction, BPMExtraction, TimeExtraction, IsMasterExtraction, IsPlayingExtraction, ModeExtraction, LayoutExtraction, VolumeExtraction, EQExtraction, IsLoadedExtraction
+from .extraction import TextExtraction, BPMExtraction, TimeExtraction, IsMasterExtraction, IsPlayingExtraction, ModeExtraction, LayoutExtraction, VolumeExtraction, EQExtraction, IsLoadedExtraction
 
 def load_from_json(json_path):
     with open(json_path, "r") as f:

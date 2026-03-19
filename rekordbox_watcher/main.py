@@ -7,7 +7,7 @@ import logging
 import requests
 import os
 
-from layout import load_from_json, Config, DeckConfig
+from .layout import load_from_json, Config, DeckConfig
 from cc_core import Snapshot, DeckSnapshot, EQSnapshot, FuzzySongIdentifier, TimeSeconds
 
 from typing import List, Optional
