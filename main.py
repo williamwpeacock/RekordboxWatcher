@@ -2,7 +2,6 @@ import pyautogui
 import datetime
 import json
 import time
-import numpy as np
 import psutil
 import logging
 import requests
@@ -10,7 +9,6 @@ import requests
 from layout import load_from_json, Config, DeckConfig
 from cc_core import Snapshot, DeckSnapshot, EQSnapshot, SongIdentifier, TimeSeconds
 
-from pydantic import BaseModel
 from typing import List, Optional
 
 logger = logging.getLogger(__name__)
@@ -18,16 +16,14 @@ logger = logging.getLogger(__name__)
 def is_rekordbox_running():
     return ("rekordbox.exe" in (p.name() for p in psutil.process_iter()))
 
-class RekordboxWatcher(BaseModel):
+class RekordboxWatcher:
     config: Config
     num_decks: int
 
     def __init__(self, config_path: str = "bounding_boxes.json"):
         logger.info(f"Creating RekordboxWatcher using config at: {config_path}")
-        super().__init__(
-            config = load_from_json(config_path),
-            num_decks = 4
-        )
+        self.config = load_from_json(config_path)
+        self.num_decks = 4
 
     def _extract_song(self, deck_config: DeckConfig, image) -> Optional[SongIdentifier]:
         is_loaded = deck_config.is_loaded.extract_from_image(image)
@@ -102,7 +98,7 @@ class RekordboxWatcher(BaseModel):
             logger.error(f"Connection error occurred when transmitting snapshot: {e}")
 
     def look(self, previous_snapshot: Optional[Snapshot] = None) -> Optional[Snapshot]:
-        current_time = np.round(time.time(), 2)
+        current_time = time.time()
 
         return self._extract_snapshot(current_time, previous_snapshot)
 
