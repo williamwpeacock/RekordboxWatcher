@@ -8,7 +8,7 @@ import requests
 import os
 
 from .layout import load_from_json, Config, DeckConfig
-from cc_core import Snapshot, DeckSnapshot, EQSnapshot, FuzzySongIdentifier, TimeSeconds
+from cc_core import Snapshot, DeckSnapshot, EQSnapshot, SongIdentifier, LinkMethod, TimeSeconds
 
 from typing import List, Optional
 
@@ -28,14 +28,15 @@ class RekordboxWatcher:
         self.config = load_from_json(config_path)
         self.num_decks = 4
 
-    def _extract_song(self, deck_config: DeckConfig, image) -> Optional[FuzzySongIdentifier]:
+    def _extract_song(self, deck_config: DeckConfig, image) -> Optional[SongIdentifier]:
         is_loaded = deck_config.is_loaded.extract_from_image(image)
         if not is_loaded:
             return None
 
-        return FuzzySongIdentifier(
+        return SongIdentifier(
             name=deck_config.song.extract_from_image(image),
-            artist=deck_config.artist.extract_from_image(image)
+            artist=deck_config.artist.extract_from_image(image),
+            link_method=LinkMethod.FUZZY
         )
 
     def _extract_deck_snapshot(self, deck_config: DeckConfig, image, previous_deck_snapshot: DeckSnapshot = None) -> DeckSnapshot:
