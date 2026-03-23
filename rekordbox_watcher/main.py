@@ -17,18 +17,37 @@ DEFAULT_CONFIG_PATH = f"{os.path.dirname(__file__)}/bounding_boxes.json"
 logger = logging.getLogger(__name__)
 
 def is_rekordbox_running():
+    """Returns True if rekordbox.exe process found in process list."""
     return ("rekordbox.exe" in (p.name() for p in psutil.process_iter()))
 
 class RekordboxWatcher:
+    """Extracts state of rekordbox as Snapshots."""
     config: Config
     num_decks: int
 
     def __init__(self, config_path: str = DEFAULT_CONFIG_PATH):
+        """Creates a new RekordboxWatcher using the config provided.
+
+        Args:
+            config_path (str): Path to JSON file containing bounding boxes.
+        """
         logger.info(f"Creating RekordboxWatcher using config at: {config_path}")
         self.config = load_from_json(config_path)
         self.num_decks = 4
 
     def _extract_song(self, deck_config: DeckConfig, image) -> Optional[SongIdentifier]:
+        """Extracts song info from target deck if song is loaded.
+
+        Args:
+            deck_config (DeckConfig): Config object for target deck.
+            image (?): Screenshot of rekordbox.
+
+        Returns:
+            SongIdentifier, or None: SongIdentifier object if loaded, None if not.
+
+            SongIdentifier instantiated with `link_method`: `LinkMethod.FUZZY` to
+            tell the linker these values may not be fully accurate.
+        """
         is_loaded = deck_config.is_loaded.extract_from_image(image)
         if not is_loaded:
             return None
@@ -40,6 +59,19 @@ class RekordboxWatcher:
         )
 
     def _extract_deck_snapshot(self, deck_config: DeckConfig, image, previous_deck_snapshot: DeckSnapshot = None) -> DeckSnapshot:
+        """Extracts deck info from target deck.
+
+        Attempts to use previous_deck_snapshot to optimise extraction.
+
+        Args:
+            deck_config (DeckConfig): Config object for target deck.
+            image (?): Screenshot of rekordbox.
+            previous_deck_snapshot (DeckSnapshot, optional): DeckSnapshot from previous extraction.
+                Defaults to None.
+
+        Returns:
+            DeckSnapshot: Contains all info for current deck.
+        """
         is_playing = deck_config.is_playing.extract_from_image(image)
         if is_playing:
             # song can only change if deck is not playing unless deck reaches the end of song
@@ -71,6 +103,19 @@ class RekordboxWatcher:
         )
 
     def _extract_snapshot(self, time: float, previous_snapshot: Optional[Snapshot] = None) -> Optional[Snapshot]:
+        """Extracts rekordbox info at current time.
+
+        Attempts to optimise using previous_snapshot.
+
+        Args:
+            time (float): Current time.
+            previous_snapshot (Snapshot, optional): Snapshot from previous extraction.
+                Defaults to None.
+
+        Returns:
+            Snapshot, or None: Snapshot if rekordbox on screen and songs loaded,
+                None if not.
+        """
         image = pyautogui.screenshot()
         layout = self.config.get_current_layout(image)
         if layout is None:
@@ -96,17 +141,41 @@ class RekordboxWatcher:
         )
 
     def _transmit(self, api_endpoint: str, snapshot: Snapshot):
+        """Sends snapshot in POST request to api_endpoint.
+
+        Args:
+            api_endpoint (str): URL of API endpoint accepting snapshots.
+            snapshot (Snapshot): Snapshot to send
+        """
         try:
             requests.post(api_endpoint, json = snapshot.model_dump(mode="python"))
         except requests.exceptions.ConnectionError as e:
             logger.error(f"Connection error occurred when transmitting snapshot: {e}")
 
     def look(self, previous_snapshot: Optional[Snapshot] = None) -> Optional[Snapshot]:
+        """Extracts current state of rekordbox.
+
+        Args:
+            previous_snapshot (Snapshot, optional): Snapshot from previous extraction.
+                Defaults to None.
+
+        Returns:
+            Snapshot, or None: Snapshot if rekordbox on screen and songs loaded,
+                None if not.
+        """
         current_time = time.time()
 
         return self._extract_snapshot(current_time, previous_snapshot)
 
     def watch(self, api_endpoint = None) -> List[Snapshot]:
+        """Repeatedly extracts and transmits rekordbox state.
+
+        Args:
+            api_endpoint (str, optional): URL of API endpoint accepting snapshots.
+
+        Returns:
+            List of Snapshot: List of snapshots extracted.
+        """
         snapshots: List[Snapshot] = []
         snapshot: Optional[Snapshot] = None
 
