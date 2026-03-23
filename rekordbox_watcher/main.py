@@ -197,13 +197,13 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-                    prog='ProgramName',
-                    description='What the program does',
-                    epilog='Text at the bottom of help')
+        prog='RekordboxWatcher',
+        description='Extracts state of rekordbox as Snapshots, saving in output_dir or transmitting to api_endpoint.'
+    )
 
-    parser.add_argument('--config_path', default=DEFAULT_CONFIG_PATH)
-    parser.add_argument('--api_endpoint', default=None)
-    parser.add_argument('--output_dir', default="out/")
+    parser.add_argument('--config_path', default=DEFAULT_CONFIG_PATH, help="path of JSON containing bounding boxes")
+    parser.add_argument('--api_endpoint', default=None, help="URL of API endpoint accepting snapshots")
+    parser.add_argument('--output_dir', default="out/", help="directory path to store resulting snapshots")
     args = parser.parse_args()
 
     logger.setLevel(logging.INFO)
