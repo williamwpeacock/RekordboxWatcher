@@ -6,12 +6,20 @@ from typing import List, Optional
 from .extraction import TextExtraction, BPMExtraction, TimeExtraction, IsMasterExtraction, IsPlayingExtraction, ModeExtraction, LayoutExtraction, VolumeExtraction, EQExtraction, IsLoadedExtraction
 
 def load_from_json(json_path):
+    """Imports bounding boxes from JSON."""
     with open(json_path, "r") as f:
         json_obj = json.loads(f.read())
 
     return Config.from_json(json_obj)
 
 class EQConfig(BaseModel):
+    """Extraction strategies for EQ values.
+
+    Attributes:
+        high (EQExtraction): Extraction strategy for high EQ value.
+        medium (EQExtraction): Extraction strategy for medium EQ value.
+        low (EQExtraction): Extraction strategy for low EQ value.
+    """
     high: EQExtraction
     medium: EQExtraction
     low: EQExtraction
@@ -25,6 +33,19 @@ class EQConfig(BaseModel):
         )
 
 class DeckConfig(BaseModel):
+    """Extraction strategies for a deck.
+
+    Attributes:
+        song (TextExtraction): Extraction strategy for song name.
+        is_loaded (IsLoadedExtraction): Extraction strategy for is_loaded boolean.
+        artist (TextExtraction): Extraction strategy for artist name.
+        is_master (IsMasterExtraction): Extraction strategy for is_master boolean.
+        bpm (BPMExtraction): Extraction strategy for BPM value.
+        time (TimeExtraction): Extraction strategy for time value.
+        is_playing (IsPlayingExtraction): Extraction strategy for is_playing boolean.
+        volume (VolumeExtraction): Extraction strategy for volume value.
+        eq (EQConfig): Extraction strategies for EQ values.
+    """
     song: TextExtraction
     is_loaded: IsLoadedExtraction
     artist: TextExtraction
@@ -50,6 +71,12 @@ class DeckConfig(BaseModel):
         )
 
 class LayoutConfig(BaseModel):
+    """Extraction strategies for a layout.
+
+    Attributes:
+        name (str): Layout name.
+        decks (list of DeckConfig): Extraction strategies for each deck.
+    """
     name: str
     decks: List[DeckConfig]
 
@@ -59,6 +86,13 @@ class LayoutConfig(BaseModel):
         return LayoutConfig(name=name, decks=[DeckConfig.from_json(deck) for deck in deck_layouts])
 
 class Config(BaseModel):
+    """Extraction strategies for a rekordbox session.
+
+    Attributes:
+        mode (ModeExtraction): Extraction strategy for mode string.
+        layout (LayoutExtraction): Extraction strategy for layout string.
+        layout_configs (list of LayoutConfig): Extraction strategies for each layout.
+    """
     mode: ModeExtraction
     layout: LayoutExtraction
     layout_configs: List[LayoutConfig]
@@ -74,6 +108,7 @@ class Config(BaseModel):
         )
 
     def get_current_layout(self, image) -> Optional[LayoutConfig]:
+        """Extracts mode and layout and returns matching LayoutConfig."""
         mode_str = self.mode.extract_from_image(image)
         if mode_str != "PERFORMANCE":
             return None
