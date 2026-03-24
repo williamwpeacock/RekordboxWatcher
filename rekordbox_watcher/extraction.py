@@ -62,7 +62,7 @@ class ExtractionArea(BaseModel):
         )
 
     def _extract_from_image(self, image) -> str | float | bool:
-        return NotImplementedError("Extraction function not implemented")
+        raise NotImplementedError("Extraction function not implemented")
 
     def extract_from_image(self, image) -> str | float | bool:
         sub_image = self.bb.extract_from_image(image)
