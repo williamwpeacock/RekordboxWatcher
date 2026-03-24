@@ -10,16 +10,31 @@ from typing import Tuple
 # Extraction functions
 
 def get_high_contrast_image(image):
+    """Converts image to grayscale, scales up, and uses erode and threshold to increase contrast.
+
+    Args:
+        image (?): Unprocessed image.
+
+    Returns:
+        Image: High contrast image.
+    """
     gry = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
     (h, w) = gry.shape[:2]
     gry = cv2.resize(gry, (w * 2, h * 2))
     erd = cv2.erode(gry, None, iterations=1)
     thr = cv2.threshold(erd, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
-    # thr = cv2.threshold(erd, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    # bnt = cv2.bitwise_not(thr)
     return Image.fromarray(thr)
 
 def closest_string(s, options):
+    """Finds closest match to string from list of options, empty string if string can't be processed.
+
+    Args:
+        s (str): Origin string.
+        options (list of str): Target strings.
+
+    Returns:
+        str: Closest match, or empty string.
+    """
     if utils.full_process(s):
         return process.extractOne(s, options)[0]
     else:
@@ -28,6 +43,12 @@ def closest_string(s, options):
 # Class definitions
 
 class Coordinate(BaseModel):
+    """Position of pixel in image.
+
+    Attributes:
+        x (int): X value in pixels.
+        y (int): Y value in pixels.
+    """
     x: int
     y: int
 
@@ -36,6 +57,12 @@ class Coordinate(BaseModel):
         return Coordinate(x=json_obj[0], y=json_obj[1])
 
 class BoundingBox(BaseModel):
+    """Box containing key feature in image.
+
+    Attributes:
+        top_left (Coordinate): Position of top left pixel.
+        bottom_right (Coordinate): Position of bottom right pixel.
+    """
     top_left: Coordinate
     bottom_right: Coordinate
 
@@ -53,6 +80,11 @@ class BoundingBox(BaseModel):
                             # "RGB")
 
 class ExtractionArea(BaseModel):
+    """Base class for extraction strategy.
+
+    Attributes:
+        bb (BoundingBox): Location of feature.
+    """
     bb: BoundingBox
 
     @classmethod
@@ -69,24 +101,28 @@ class ExtractionArea(BaseModel):
         return self._extract_from_image(sub_image)
 
 class TextExtraction(ExtractionArea):
+    """Strategy to extract text from image."""
     def _extract_from_image(self, image) -> str:
         new_image = get_high_contrast_image(image)
         text = pytesseract.image_to_string(new_image, lang='eng', config='--psm 7').strip()
         return text
 
 class NumberExtraction(ExtractionArea):
+    """Strategy to extract number from image."""
     def _extract_from_image(self, image) -> float:
         new_image = get_high_contrast_image(image)
         num = pytesseract.image_to_string(new_image, config="--psm 7 digits").strip()
         return num
 
 class ColorExtraction(ExtractionArea):
+    """Strategy to extract color from image."""
     def _extract_from_image(self, image) -> Tuple[int, int, int]:
         pix = np.array(image)
         color = np.mean(pix, axis=(0,1))
         return color
 
 class ClosestTextExtraction(TextExtraction):
+    """Strategy to extract text from image given a list of possible values."""
     def _extract_from_image(self, image, options) -> str:
         text = super()._extract_from_image(image)
         return closest_string(text, options)
@@ -94,11 +130,13 @@ class ClosestTextExtraction(TextExtraction):
 # Specific implementations
 
 class IsLoadedExtraction(ColorExtraction):
+    """Strategy to extract is_loaded boolean from image."""
     def _extract_from_image(self, image) -> bool:
         color = super()._extract_from_image(image)
         return not (color[0] > color[2])
 
 class TimeExtraction(NumberExtraction):
+    """Strategy to extract time value from image."""
     def _extract_from_image(self, image) -> float:
         text = super()._extract_from_image(image)
         # format: MM:SS.m
@@ -110,6 +148,7 @@ class TimeExtraction(NumberExtraction):
         return int(text[:2]) * 60 + int(text[2:4]) + int(text[4])/10
 
 class BPMExtraction(NumberExtraction):
+    """Strategy to extract BPM value from image."""
     def _extract_from_image(self, image) -> float:
         text = super()._extract_from_image(image)
         # format: (X)XX.XX
@@ -124,24 +163,29 @@ class BPMExtraction(NumberExtraction):
             return -1
 
 class IsMasterExtraction(ColorExtraction):
+    """Strategy to extract is_master boolean from image."""
     def _extract_from_image(self, image) -> bool:
         color = super()._extract_from_image(image)
         return color[0] > color[2]
 
 class IsPlayingExtraction(ColorExtraction):
+    """Strategy to extract is_playing boolean from image."""
     def _extract_from_image(self, image) -> bool:
         color = super()._extract_from_image(image)
         return color[1] > color[2]
 
 class ModeExtraction(ClosestTextExtraction):
+    """Strategy to extract mode from image."""
     def _extract_from_image(self, image):
         return super()._extract_from_image(image, ["EXPORT", "PERFORMANCE", "LIGHTING", "EDIT"])
 
 class LayoutExtraction(ClosestTextExtraction):
+    """Strategy to extract layout from image."""
     def _extract_from_image(self, image):
         return super()._extract_from_image(image, ["2Deck Horizontal", "2Deck Vertical", "4Deck Horizontal", "4Deck Vertical", "Browse"])
 
 class VolumeExtraction(ColorExtraction):
+    """Strategy to extract volume value from image."""
     def _extract_from_image(self, image) -> float:
         volume_vector = super()._extract_from_image(image)
         max_volume_vector = np.array([13.34736842, 75.51578947, 125.25263158])
@@ -154,7 +198,7 @@ class VolumeExtraction(ColorExtraction):
         return np.round(value, 2)
 
 class EQExtraction(ColorExtraction):
-
+    """Strategy to extract EQ value from image."""
     def extract_from_image(self, image) -> float:
         sub_image_1 = self.bb.extract_from_image(image)
 
