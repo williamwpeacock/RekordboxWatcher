@@ -1,3 +1,14 @@
+"""Extracts state of rekordbox as Snapshots.
+
+Uses Optical Character Recognition to extract deck and mixer
+values from a rekordbox session. Rekordbox must be the top window
+on the primary monitor for the watcher to work.
+
+Typical usage example:
+
+  watcher = RekordboxWatcher()
+  watcher.watch(api_endpoint="127.0.0.1:8000/incoming_snapshot")
+"""
 import pyautogui
 import datetime
 import json
