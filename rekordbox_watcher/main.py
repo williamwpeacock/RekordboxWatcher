@@ -148,7 +148,7 @@ class RekordboxWatcher:
         return Snapshot(
             decks=decks,
             bpm=bpm,
-            time=TimeSeconds(time)
+            time=Time(value=time, unit="seconds")
         )
 
     def _transmit(self, api_endpoint: str, snapshot: Snapshot):
@@ -195,6 +195,7 @@ class RekordboxWatcher:
             snapshot = self.look(snapshot)
             if snapshot is not None:
                 logger.info(f"Extracted snapshot: {snapshot}")
+                print(snapshot)
                 if api_endpoint is not None:
                     self._transmit(api_endpoint, snapshot)
                 else:
@@ -204,29 +205,17 @@ class RekordboxWatcher:
 
         return snapshots
 
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        prog='RekordboxWatcher',
-        description='Extracts state of rekordbox as Snapshots, saving in output_dir or transmitting to api_endpoint.'
-    )
-
-    parser.add_argument('--config_path', default=DEFAULT_CONFIG_PATH, help="path of JSON containing bounding boxes")
-    parser.add_argument('--api_endpoint', default=None, help="URL of API endpoint accepting snapshots")
-    parser.add_argument('--output_dir', default="out/", help="directory path to store resulting snapshots")
-    args = parser.parse_args()
-
-    logger.setLevel(logging.INFO)
+def main(logging_level, config_path, api_endpoint, output_dir):
+    logger.setLevel(logging_level)
 
     watcher = RekordboxWatcher(
-        config_path = args.config_path
+        config_path = config_path if config_path is not None else DEFAULT_CONFIG_PATH
     )
-    snapshots = watcher.watch(args.api_endpoint)
+    snapshots = watcher.watch(api_endpoint)
 
     if len(snapshots) > 0:
         dt = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = f"{args.output_dir}/session_{dt}.json"
+        output_path = f"{output_dir}/session_{dt}.json"
 
         logger.info(f"Saving to: {output_path}")
         with open(output_path, "w") as f:
