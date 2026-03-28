@@ -145,7 +145,10 @@ class TimeExtraction(NumberExtraction):
         if len(text) != 5:
             return -1
 
-        return int(text[:2]) * 60 + int(text[2:4]) + int(text[4])/10
+        try:
+            return int(text[:2]) * 60 + int(text[2:4]) + int(text[4])/10
+        except ValueError:
+            return -1
 
 class BPMExtraction(NumberExtraction):
     """Strategy to extract BPM value from image."""
@@ -159,7 +162,7 @@ class BPMExtraction(NumberExtraction):
         bpm_str = f"{text[:-2]}.{text[-2:]}"
         try:
             return float(bpm_str)
-        except:
+        except ValueError:
             return -1
 
 class IsMasterExtraction(ColorExtraction):
