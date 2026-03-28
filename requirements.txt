@@ -1,0 +1,12 @@
+# Type checking
+pydantic
+
+# Image taking and handling
+pyautogui
+cv2
+PIL
+
+# Data processing
+pytesseract
+fuzzywuzzy
+numpy
