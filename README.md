@@ -13,7 +13,6 @@ python main.py --api_endpoint "127.0.0.1:8000"
 - Extraction takes a long time
 
 ## Future work
-- requirements.txt
 - Test suite
 - EQ value extraction
 - Support for different layouts and screen dimensions
