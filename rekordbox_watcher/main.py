@@ -19,7 +19,7 @@ import requests
 import os
 
 from .layout import load_from_json, Config, DeckConfig
-from cc_core import Snapshot, DeckSnapshot, EQSnapshot, SongIdentifier, LinkMethod, TimeSeconds
+from .schema import Snapshot, DeckSnapshot, EQSnapshot, SongIdentifier, LinkMethod, Time
 
 from typing import List, Optional
 
@@ -108,7 +108,7 @@ class RekordboxWatcher:
         return DeckSnapshot(
             song=song,
             is_playing=bool(is_playing),
-            time=TimeSeconds(value=time),
+            time=Time(value=time, unit="seconds"),
             volume=volume,
             eq=eq
         )
