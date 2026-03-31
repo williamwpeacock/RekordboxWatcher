@@ -18,7 +18,8 @@ import logging
 import requests
 import os
 
-from .layout import load_from_json, Config, DeckConfig
+from .layout import load_from_json, Config
+from .extraction import DeckExtractionStrategies
 from .schema import Snapshot, DeckSnapshot, EQSnapshot, SongIdentifier, LinkMethod, Time
 
 from typing import List, Optional
@@ -46,7 +47,7 @@ class RekordboxWatcher:
         self.config = load_from_json(config_path)
         self.num_decks = 4
 
-    def _extract_song(self, deck_config: DeckConfig, image) -> Optional[SongIdentifier]:
+    def _extract_song(self, deck: DeckExtractionStrategies, image) -> Optional[SongIdentifier]:
         """Extracts song info from target deck if song is loaded.
 
         Args:
@@ -59,17 +60,17 @@ class RekordboxWatcher:
             SongIdentifier instantiated with `link_method`: `LinkMethod.FUZZY` to
             tell the linker these values may not be fully accurate.
         """
-        is_loaded = deck_config.is_loaded.extract_from_image(image)
+        is_loaded = deck.is_loaded.extract_from_image(image)
         if not is_loaded:
             return None
 
         return SongIdentifier(
-            name=deck_config.song.extract_from_image(image),
-            artist=deck_config.artist.extract_from_image(image),
+            name=deck.song.extract_from_image(image),
+            artist=deck.artist.extract_from_image(image),
             link_method=LinkMethod.FUZZY
         )
 
-    def _extract_deck_snapshot(self, deck_config: DeckConfig, image, previous_deck_snapshot: DeckSnapshot = None) -> DeckSnapshot:
+    def _extract_deck_snapshot(self, deck: DeckExtractionStrategies, image, previous_deck_snapshot: DeckSnapshot = None) -> DeckSnapshot:
         """Extracts deck info from target deck.
 
         Attempts to use previous_deck_snapshot to optimise extraction.
@@ -83,22 +84,22 @@ class RekordboxWatcher:
         Returns:
             DeckSnapshot: Contains all info for current deck.
         """
-        is_playing = deck_config.is_playing.extract_from_image(image)
+        is_playing = deck.is_playing.extract_from_image(image)
         if is_playing:
             # song can only change if deck is not playing unless deck reaches the end of song
             # in this case assume deck is paused before new song starts playing
             if previous_deck_snapshot is None:
-                song = self._extract_song(deck_config, image)
+                song = self._extract_song(deck, image)
             else:
                 song = previous_deck_snapshot.song
 
             # check for mixer updates
-            volume = deck_config.volume.extract_from_image(image)
-            time = deck_config.time.extract_from_image(image)
-            eq = EQSnapshot(high=0, medium=0, low=deck_config.eq.low.extract_from_image(image))
+            volume = deck.volume.extract_from_image(image)
+            time = deck.time.extract_from_image(image)
+            eq = EQSnapshot(high=0, medium=0, low=deck.low.extract_from_image(image))
         else:
             # check for song changes
-            song = self._extract_song(deck_config, image)
+            song = self._extract_song(deck, image)
 
             # mixer updates don't matter if no song is playing
             volume = 0
@@ -128,18 +129,18 @@ class RekordboxWatcher:
                 None if not.
         """
         image = pyautogui.screenshot()
-        layout = self.config.get_current_layout(image)
-        if layout is None:
+        extraction_strategies = self.config.get_extraction_strategies(image)
+        if extraction_strategies is None:
             return None
 
         decks = []
         bpm = -1
-        for i, deck_config in enumerate(layout.decks):
+        for i, deck in enumerate(extraction_strategies.decks):
             previous_deck_snapshot = previous_snapshot.decks[i] if previous_snapshot is not None else None
-            decks.append(self._extract_deck_snapshot(deck_config, image, previous_deck_snapshot))
+            decks.append(self._extract_deck_snapshot(deck, image, previous_deck_snapshot))
 
-            if bpm == -1 and deck_config.is_master.extract_from_image(image):
-                bpm = deck_config.bpm.extract_from_image(image)
+            if bpm == -1 and deck.is_master.extract_from_image(image):
+                bpm = deck.bpm.extract_from_image(image)
 
         # snapshot is considered empty if no songs loaded
         if all([(deck.song is None) for deck in decks]):
