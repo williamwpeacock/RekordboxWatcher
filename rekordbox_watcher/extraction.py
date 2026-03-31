@@ -197,8 +197,8 @@ class VolumeExtraction(ColorExtraction):
     """Strategy to extract volume value from image."""
     def _extract_from_image(self, image) -> float:
         volume_vector = super()._extract_from_image(image)
-        max_volume_vector = np.array([13.34736842, 75.51578947, 125.25263158])
-        min_volume_vector = np.array([17.45789474, 17.45789474, 17.45789474])
+        max_volume_vector = np.array([0.38947368, 124.72631579, 224.2])
+        min_volume_vector = np.array([5.28421053, 5.28421053, 5.28421053])
 
         # red value throws calculation for some reason...
         value = np.mean((volume_vector[1:] - min_volume_vector[1:]) / (max_volume_vector[1:] - min_volume_vector[1:]))
