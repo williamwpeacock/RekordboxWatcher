@@ -5,7 +5,9 @@ from PIL import Image
 from fuzzywuzzy import process, utils
 
 from pydantic import BaseModel
-from typing import Tuple
+from typing import Tuple, List, Dict, Optional
+
+STRATEGY_MAP = {}
 
 # Extraction functions
 
@@ -86,6 +88,10 @@ class ExtractionArea(BaseModel):
         bb (BoundingBox): Location of feature.
     """
     bb: BoundingBox
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        STRATEGY_MAP[cls.__name__] = cls
 
     @classmethod
     def from_json(cls, json_obj):
