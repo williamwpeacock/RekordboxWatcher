@@ -2,10 +2,11 @@
 Python program using Optical Character Recognition to extract the current state of rekordbox from periodic screenshots. Created as part of a wider toolset intended to wrap rekordbox with more useful tools.
 
 ## Usage
-
 ```bash
 cd RekordboxWatcher
-python main.py --api_endpoint "127.0.0.1:8000"
+python -m pip install -r requirements.txt
+python -m pip install .
+python -m rekordbox_watcher --api_endpoint "127.0.0.1:8000"
 ```
 
 ## Limitations
