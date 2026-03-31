@@ -16,7 +16,7 @@ python -m rekordbox_watcher --api_endpoint "127.0.0.1:8000"
 ## Future work
 - Test suite
 - EQ value extraction
-- Support for different layouts and screen dimensions
+- Support for different layouts
 - Implement check for rekordbox on screen
 - Investigate adding options for more control on extraction and transmission of data
 - Investigate synchronising screenshot taking with master BPM
