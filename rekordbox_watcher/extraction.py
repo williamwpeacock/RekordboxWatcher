@@ -235,3 +235,140 @@ class EQExtraction(ColorExtraction):
 
         # ensure value is resonable
         return np.round(value, 2)
+
+# Scaling
+
+class ScaledAnchorPoints(BaseModel):
+    deck_left_pos: int
+    deck_right_pos: int
+    mixer_left_pos: int
+    mixer_right_pos: int
+
+    def _anchor_to(self, left_pos, right_pos, property_config):
+        result = [[0, property_config.bb[0][1]], [0, property_config.bb[1][1]]]
+        left_x = property_config.bb[0][0]
+        if property_config.left_anchor == "LEFT":
+            result[0][0] = left_pos + left_x
+        elif property_config.left_anchor == "RIGHT":
+            result[0][0] = right_pos + left_x
+
+        right_x = property_config.bb[1][0]
+        if property_config.right_anchor == "LEFT":
+            result[1][0] = left_pos + right_x
+        elif property_config.right_anchor == "RIGHT":
+            result[1][0] = right_pos + right_x
+
+        return result
+
+    def anchor_to_deck(self, property_config):
+        return self._anchor_to(self.deck_left_pos, self.deck_right_pos, property_config)
+
+    def anchor_to_mixer(self, property_config):
+        return self._anchor_to(self.mixer_left_pos, self.mixer_right_pos, property_config)
+
+class Scaler(BaseModel):
+    screen_width: int
+    screen_height: int
+    mixer_width: int
+
+    @property
+    def default_deck_width(self):
+        return (self.screen_width - self.mixer_width) / 2
+
+    def calculate_scaling_factor(self, current_screen_width):
+        return (current_screen_width - self.mixer_width) / (self.screen_width - self.mixer_width)
+
+    def calculate_current_deck_width(self, current_screen_width):
+        scaling_factor = self.calculate_scaling_factor(current_screen_width)
+        return scaling_factor * self.default_deck_width
+
+    def get_mixer_x_pos(self, current_screen_width):
+        return self.calculate_current_deck_width(current_screen_width)
+
+    def get_deck_x_pos(self, deck_num, current_screen_width):
+        is_left_deck = (deck_num % 2 == 0)
+        if is_left_deck:
+            return 0
+
+        return self.calculate_current_deck_width(current_screen_width) + self.mixer_width
+
+    def get_scaled_anchor_points(self, deck_num, current_screen_width):
+        deck_left_pos = self.get_deck_x_pos(deck_num, current_screen_width)
+        deck_right_pos = deck_left_pos + self.calculate_current_deck_width(current_screen_width)
+        mixer_left_pos = self.get_mixer_x_pos(current_screen_width)
+        mixer_right_pos = mixer_left_pos + self.mixer_width
+
+        return ScaledAnchorPoints(
+            deck_left_pos = int(deck_left_pos),
+            deck_right_pos = int(deck_right_pos),
+            mixer_left_pos = int(mixer_left_pos),
+            mixer_right_pos = int(mixer_right_pos)
+        )
+
+# Extraction strategy factory and containers
+
+class DeckExtractionStrategies(BaseModel):
+    song: Optional[TextExtraction] = None
+    is_loaded: Optional[IsLoadedExtraction] = None
+    artist: Optional[TextExtraction] = None
+    is_master: Optional[IsMasterExtraction] = None
+    bpm: Optional[BPMExtraction] = None
+    time: Optional[TimeExtraction] = None
+    is_playing: Optional[IsPlayingExtraction] = None
+    volume: Optional[VolumeExtraction] = None
+    high: Optional[EQExtraction] = None
+    medium: Optional[EQExtraction] = None
+    low: Optional[EQExtraction] = None
+
+    def __init__(self, anchor_points, deck_config):
+        super().__init__()
+        deck_properties_dict = deck_config.deck_properties.__dict__
+        for property_name, property_config in deck_properties_dict.items():
+            extraction_cls = property_config.extraction_strategy
+            anchored_bb = anchor_points.anchor_to_deck(property_config)
+            obj = extraction_cls(
+                bb=BoundingBox.from_json(anchored_bb)
+            )
+            setattr(self, property_name, obj)
+
+        mixer_properties_dict = deck_config.mixer_properties.__dict__
+        for property_name, property_config in mixer_properties_dict.items():
+            extraction_cls = property_config.extraction_strategy
+            anchored_bb = anchor_points.anchor_to_mixer(property_config)
+            obj = extraction_cls(
+                bb=BoundingBox.from_json(anchored_bb)
+            )
+            setattr(self, property_name, obj)
+
+class ExtractionStrategies(BaseModel):
+    decks: List[DeckExtractionStrategies]
+
+    def __init__(self, scaler: "Scaler", screen_width: int, deck_configs):
+        super().__init__(decks=[])
+
+        for deck_num, deck_config in enumerate(deck_configs):
+            anchor_points = scaler.get_scaled_anchor_points(deck_num, screen_width)
+            self.decks.append(
+                DeckExtractionStrategies(
+                    anchor_points = anchor_points,
+                    deck_config = deck_config
+                )
+            )
+
+class ExtractionStrategyFactory(BaseModel):
+    scaler: Scaler
+    _extraction_strategies: Dict[int, Dict[str, ExtractionStrategies]]
+
+    def get_strategies(self, width, layout_config) -> ExtractionStrategies:
+        if not hasattr(self, "_extraction_strategies"):
+            self._extraction_strategies = {}
+
+        if width not in self._extraction_strategies:
+            self._extraction_strategies[width] = {}
+
+        layout_str = layout_config.name
+
+        if layout_str not in self._extraction_strategies[width]:
+            self._extraction_strategies[width][layout_str] = ExtractionStrategies(self.scaler, width, layout_config.deck_configs)
+
+        return self._extraction_strategies[width][layout_str]
