@@ -1,62 +1,297 @@
 {
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "mixer_width": 190,
     "mode": [[69, 53], [157, 65]],
     "layout": [[212, 53], [302, 65]],
     "layout_configs": {
         "4Deck Horizontal": [
             {
-                "song": [[52, 270], [602, 293]],
-                "artist": [[54, 290], [205, 305]],
-                "is_master": [[814, 293], [854, 304]],
-                "bpm": [[751, 389], [801, 410]],
-                "time": [[676, 287], [733, 306]],
-                "is_playing": [[702, 440], [703, 441]],
-                "volume": [[936, 509], [938, 604]],
-                "eq": {
-                    "high": [[927, 362], [936, 379]],
-                    "medium": [[927, 400], [936, 417]],
-                    "low": [[927, 438], [936, 458]]
+                "deck_properties": {
+                    "song": {
+                        "bb": [[52, 270], [-260, 293]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "TextExtraction"
+                    },
+                    "is_loaded": {
+                        "bb": [[52, 270], [-260, 293]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "IsLoadedExtraction"
+                    },
+                    "artist": {
+                        "bb": [[54, 290], [205, 305]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "TextExtraction"
+                    },
+                    "is_master": {
+                        "bb": [[-50, 293], [-11, 304]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "IsMasterExtraction"
+                    },
+                    "time": {
+                        "bb": [[-188, 287], [-131, 306]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "TimeExtraction"
+                    },
+                    "bpm": {
+                        "bb": [[-114, 389], [-65, 410]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "BPMExtraction"
+                    },
+                    "is_playing": {
+                        "bb": [[-163, 440], [-162, 441]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "IsPlayingExtraction"
+                    }
+                },
+                "mixer_properties": {
+                    "volume": {
+                        "bb": [[72, 509], [74, 604]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "VolumeExtraction"
+                    },
+                    "high": {
+                        "bb": [[62, 362], [71, 379]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    },
+                    "medium": {
+                        "bb": [[62, 400], [71, 417]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    },
+                    "low": {
+                        "bb": [[62, 438], [71, 458]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    }
                 }
             },
             {
-                "song": [[1106, 270], [1656, 293]],
-                "artist": [[1108, 290], [1259, 305]],
-                "is_master": [[1868, 293], [1908, 304]],
-                "bpm": [[1125, 389], [1175, 410]],
-                "time": [[1730, 287], [1787, 306]],
-                "is_playing": [[1076, 440], [1077, 441]],
-                "volume": [[980, 509], [982, 604]],
-                "eq": {
-                    "high": [[971, 362], [980, 379]],
-                    "medium": [[971, 400], [980, 417]],
-                    "low": [[971, 438], [980, 458]]
+                "deck_properties": {
+                    "song": {
+                        "bb": [[52, 270], [-260, 293]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "TextExtraction"
+                    },
+                    "is_loaded": {
+                        "bb": [[52, 270], [-260, 293]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "IsLoadedExtraction"
+                    },
+                    "artist": {
+                        "bb": [[54, 290], [205, 305]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "TextExtraction"
+                    },
+                    "is_master": {
+                        "bb": [[-51, 293], [-12, 304]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "IsMasterExtraction"
+                    },
+                    "time": {
+                        "bb": [[-189, 287], [-132, 306]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "TimeExtraction"
+                    },
+                    "bpm": {
+                        "bb": [[70, 389], [120, 410]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "BPMExtraction"
+                    },
+                    "is_playing": {
+                        "bb": [[21, 440], [22, 441]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "IsPlayingExtraction"
+                    }
+                },
+                "mixer_properties": {
+                    "volume": {
+                        "bb": [[116, 509], [118, 604]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "VolumeExtraction"
+                    },
+                    "high": {
+                        "bb": [[106, 362], [115, 379]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    },
+                    "medium": {
+                        "bb": [[106, 400], [115, 417]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    },
+                    "low": {
+                        "bb": [[106, 438], [115, 458]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    }
                 }
             },
             {
-                "song": [[52, 465], [602, 488]],
-                "artist": [[54, 485], [205, 500]],
-                "is_master": [[814, 488], [854, 499]],
-                "bpm": [[751, 564], [801, 585]],
-                "time": [[676, 482], [733, 501]],
-                "is_playing": [[702, 615], [703, 616]],
-                "volume": [[892, 509], [894, 604]],
-                "eq": {
-                    "high": [[883, 362], [892, 379]],
-                    "medium": [[883, 400], [892, 417]],
-                    "low": [[883, 438], [892, 458]]
+                "deck_properties": {
+                    "song": {
+                        "bb": [[52, 465], [-260, 488]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "TextExtraction"
+                    },
+                    "is_loaded": {
+                        "bb": [[52, 465], [-260, 488]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "IsLoadedExtraction"
+                    },
+                    "artist": {
+                        "bb": [[54, 485], [205, 500]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "TextExtraction"
+                    },
+                    "is_master": {
+                        "bb": [[-50, 488], [-11, 499]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "IsMasterExtraction"
+                    },
+                    "time": {
+                        "bb": [[-188, 482], [-131, 501]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "TimeExtraction"
+                    },
+                    "bpm": {
+                        "bb": [[-114, 564], [-65, 585]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "BPMExtraction"
+                    },
+                    "is_playing": {
+                        "bb": [[-163, 615], [-162, 616]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "IsPlayingExtraction"
+                    }
+                },
+                "mixer_properties": {
+                    "volume": {
+                        "bb": [[28, 509], [30, 604]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "VolumeExtraction"
+                    },
+                    "high": {
+                        "bb": [[18, 362], [27, 379]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    },
+                    "medium": {
+                        "bb": [[18, 400], [27, 417]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    },
+                    "low": {
+                        "bb": [[18, 438], [27, 458]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    }
                 }
             },
             {
-                "song": [[1106, 465], [1656, 488]],
-                "artist": [[1108, 485], [1259, 500]],
-                "is_master": [[1868, 488], [1908, 499]],
-                "bpm": [[1125, 564], [1175, 585]],
-                "time": [[1730, 482], [1787, 501]],
-                "is_playing": [[1076, 615], [1077, 616]],
-                "volume": [[1024, 509], [1026, 604]],
-                "eq": {
-                    "high": [[1015, 362], [1024, 379]],
-                    "medium": [[1015, 400], [1024, 417]],
-                    "low": [[1015, 438], [1024, 458]]
+                "deck_properties": {
+                    "song": {
+                        "bb": [[52, 465], [-260, 488]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "TextExtraction"
+                    },
+                    "is_loaded": {
+                        "bb": [[52, 465], [-260, 488]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "IsLoadedExtraction"
+                    },
+                    "artist": {
+                        "bb": [[54, 485], [205, 500]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "TextExtraction"
+                    },
+                    "is_master": {
+                        "bb": [[-51, 488], [-12, 499]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "IsMasterExtraction"
+                    },
+                    "time": {
+                        "bb": [[-189, 482], [-132, 501]],
+                        "left_anchor": "RIGHT",
+                        "right_anchor": "RIGHT",
+                        "extraction_strategy": "TimeExtraction"
+                    },
+                    "bpm": {
+                        "bb": [[70, 564], [120, 585]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "BPMExtraction"
+                    },
+                    "is_playing": {
+                        "bb": [[21, 615], [22, 616]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "IsPlayingExtraction"
+                    }
+                },
+                "mixer_properties": {
+                    "volume": {
+                        "bb": [[160, 509], [162, 604]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "VolumeExtraction"
+                    },
+                    "high": {
+                        "bb": [[150, 362], [159, 379]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    },
+                    "medium": {
+                        "bb": [[150, 400], [159, 417]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    },
+                    "low": {
+                        "bb": [[150, 438], [159, 458]],
+                        "left_anchor": "LEFT",
+                        "right_anchor": "LEFT",
+                        "extraction_strategy": "EQExtraction"
+                    }
                 }
             }
         ]
