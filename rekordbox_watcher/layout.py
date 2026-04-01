@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from enum import Enum
 from typing import List, Optional, Dict, Type
 
-from .extraction import ExtractionStrategyFactory, ExtractionStrategies, ModeExtraction, LayoutExtraction, ExtractionArea, STRATEGY_MAP, Scaler
+from .extraction import ExtractionStrategyFactory, ExtractionStrategies, ModeExtraction, LayoutExtraction, ExtractionArea, STRATEGY_MAP, Scaler, Platform
 
 def load_from_json(json_path):
     """Imports bounding boxes from JSON."""
