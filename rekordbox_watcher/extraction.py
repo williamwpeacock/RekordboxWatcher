@@ -3,7 +3,9 @@ import numpy as np
 import cv2
 from PIL import Image
 from fuzzywuzzy import process, utils
+from sys import platform
 
+from enum import Enum
 from pydantic import BaseModel
 from typing import Tuple, List, Dict, Optional
 
@@ -186,6 +188,7 @@ class IsPlayingExtraction(ColorExtraction):
 class ModeExtraction(ClosestTextExtraction):
     """Strategy to extract mode from image."""
     def _extract_from_image(self, image):
+        image.show()
         return super()._extract_from_image(image, ["EXPORT", "PERFORMANCE", "LIGHTING", "EDIT"])
 
 class LayoutExtraction(ClosestTextExtraction):
@@ -243,20 +246,26 @@ class ScaledAnchorPoints(BaseModel):
     deck_right_pos: int
     mixer_left_pos: int
     mixer_right_pos: int
+    y_offset: int
 
     def _anchor_to(self, left_pos, right_pos, property_config):
-        result = [[0, property_config.bb[0][1]], [0, property_config.bb[1][1]]]
+        result = [[0, 0], [0, 0]]
+
         left_x = property_config.bb[0][0]
         if property_config.left_anchor == "LEFT":
             result[0][0] = left_pos + left_x
         elif property_config.left_anchor == "RIGHT":
             result[0][0] = right_pos + left_x
 
+        result[0][1] = (property_config.bb[0][1] + self.y_offset)
+
         right_x = property_config.bb[1][0]
         if property_config.right_anchor == "LEFT":
             result[1][0] = left_pos + right_x
         elif property_config.right_anchor == "RIGHT":
             result[1][0] = right_pos + right_x
+
+        result[1][1] = (property_config.bb[1][1] + self.y_offset)
 
         return result
 
@@ -266,14 +275,38 @@ class ScaledAnchorPoints(BaseModel):
     def anchor_to_mixer(self, property_config):
         return self._anchor_to(self.mixer_left_pos, self.mixer_right_pos, property_config)
 
+class Platform(str, Enum):
+    WINDOWS = "windows"
+    MAC = "mac"
+    UNKNOWN = "unknown"
+
+    @staticmethod
+    def detect(self):
+        if platform in ["win32", "win64"]:
+            return Platform.WINDOWS
+        elif platform == "darwin":
+            return Platform.MAC
+        else:
+            return Platform.UNKNOWN
+
 class Scaler(BaseModel):
     screen_width: int
     screen_height: int
     mixer_width: int
+    y_offset: int
 
     @property
     def default_deck_width(self):
         return (self.screen_width - self.mixer_width) / 2
+
+    @staticmethod
+    def get_y_offset(platform):
+        if platform == Platform.WINDOWS:
+            return 0
+        elif platform == Platform.MAC:
+            return -45
+        else:
+            raise ValueError(f"Unkown Y offset for platform: {platform}")
 
     def calculate_scaling_factor(self, current_screen_width):
         return (current_screen_width - self.mixer_width) / (self.screen_width - self.mixer_width)
@@ -302,7 +335,8 @@ class Scaler(BaseModel):
             deck_left_pos = int(deck_left_pos),
             deck_right_pos = int(deck_right_pos),
             mixer_left_pos = int(mixer_left_pos),
-            mixer_right_pos = int(mixer_right_pos)
+            mixer_right_pos = int(mixer_right_pos),
+            y_offset = self.y_offset
         )
 
 # Extraction strategy factory and containers
@@ -320,7 +354,7 @@ class DeckExtractionStrategies(BaseModel):
     medium: Optional[EQExtraction] = None
     low: Optional[EQExtraction] = None
 
-    def __init__(self, anchor_points, deck_config):
+    def __init__(self, anchor_points: ScaledAnchorPoints, deck_config):
         super().__init__()
         deck_properties_dict = deck_config.deck_properties.__dict__
         for property_name, property_config in deck_properties_dict.items():

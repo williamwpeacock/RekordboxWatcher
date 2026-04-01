@@ -17,11 +17,13 @@ import psutil
 import logging
 import requests
 import os
+from PIL import Image
 
 from .layout import load_from_json, Config
-from .extraction import DeckExtractionStrategies
+from .extraction import DeckExtractionStrategies, Platform
 from .schema import Snapshot, DeckSnapshot, EQSnapshot, SongIdentifier, LinkMethod, Time
 
+from enum import Enum
 from typing import List, Optional
 
 DEFAULT_CONFIG_PATH = f"{os.path.dirname(__file__)}/bounding_boxes.json"
@@ -47,12 +49,12 @@ class RekordboxWatcher:
         self.config = load_from_json(config_path)
         self.num_decks = 4
 
-    def _extract_song(self, deck: DeckExtractionStrategies, image) -> Optional[SongIdentifier]:
+    def _extract_song(self, deck: DeckExtractionStrategies, image: Image) -> Optional[SongIdentifier]:
         """Extracts song info from target deck if song is loaded.
 
         Args:
             deck_config (DeckConfig): Config object for target deck.
-            image (?): Screenshot of rekordbox.
+            image (Image): Screenshot of rekordbox.
 
         Returns:
             SongIdentifier, or None: SongIdentifier object if loaded, None if not.
@@ -70,14 +72,14 @@ class RekordboxWatcher:
             link_method=LinkMethod.FUZZY
         )
 
-    def _extract_deck_snapshot(self, deck: DeckExtractionStrategies, image, previous_deck_snapshot: DeckSnapshot = None) -> DeckSnapshot:
+    def _extract_deck_snapshot(self, deck: DeckExtractionStrategies, image: Image, previous_deck_snapshot: DeckSnapshot = None) -> DeckSnapshot:
         """Extracts deck info from target deck.
 
         Attempts to use previous_deck_snapshot to optimise extraction.
 
         Args:
             deck_config (DeckConfig): Config object for target deck.
-            image (?): Screenshot of rekordbox.
+            image (Image): Screenshot of rekordbox.
             previous_deck_snapshot (DeckSnapshot, optional): DeckSnapshot from previous extraction.
                 Defaults to None.
 
@@ -114,7 +116,7 @@ class RekordboxWatcher:
             eq=eq
         )
 
-    def _extract_snapshot(self, time: float, previous_snapshot: Optional[Snapshot] = None) -> Optional[Snapshot]:
+    def _extract_snapshot(self, time: float, image: Image, previous_snapshot: Optional[Snapshot] = None) -> Optional[Snapshot]:
         """Extracts rekordbox info at current time.
 
         Attempts to optimise using previous_snapshot.
@@ -128,7 +130,6 @@ class RekordboxWatcher:
             Snapshot, or None: Snapshot if rekordbox on screen and songs loaded,
                 None if not.
         """
-        image = pyautogui.screenshot()
         extraction_strategies = self.config.get_extraction_strategies(image)
         if extraction_strategies is None:
             return None
@@ -176,8 +177,9 @@ class RekordboxWatcher:
                 None if not.
         """
         current_time = time.time()
+        current_image = pyautogui.screenshot()
 
-        return self._extract_snapshot(current_time, previous_snapshot)
+        return self._extract_snapshot(current_time, current_image, previous_snapshot)
 
     def watch(self, api_endpoint = None) -> List[Snapshot]:
         """Repeatedly extracts and transmits rekordbox state.
