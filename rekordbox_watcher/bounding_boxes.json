@@ -1,9 +1,26 @@
 {
-    "screen_width": 1920,
-    "screen_height": 1080,
-    "mixer_width": 190,
-    "mode": [[69, 53], [157, 65]],
-    "layout": [[212, 53], [302, 65]],
+    "mode": {
+        "bb": [[69, 53], [157, 65]],
+        "left_anchor": "LEFT",
+        "right_anchor": "LEFT",
+        "extraction_strategy": "ModeExtraction"
+    },
+    "layout": {
+        "bb": [[212, 53], [302, 65]],
+        "left_anchor": "LEFT",
+        "right_anchor": "LEFT",
+        "extraction_strategy": "LayoutExtraction"
+    },
+    "config_defaults": {
+        "screen_width": 1920,
+        "screen_height": 1080,
+        "mixer_width": 190,
+        "platform": "WINDOWS"
+    },
+    "platform_offsets": {
+        "WINDOWS": 0,
+        "MAC": -45
+    },
     "layout_configs": {
         "4Deck Horizontal": [
             {

@@ -1,10 +1,11 @@
 import json
+from sys import platform
 
 from pydantic import BaseModel
 from enum import Enum
-from typing import List, Optional, Dict, Type
+from typing import List, Dict, Type
 
-from .extraction import ExtractionStrategyFactory, ExtractionStrategies, ModeExtraction, LayoutExtraction, ExtractionArea, STRATEGY_MAP, Scaler, Platform
+from .extraction import ExtractionStrategyBase, STRATEGY_MAP
 
 def load_from_json(json_path):
     """Imports bounding boxes from JSON."""
@@ -21,7 +22,7 @@ class Property(BaseModel):
     bb: List[List[int]]
     left_anchor: AnchorSide
     right_anchor: AnchorSide
-    extraction_strategy: Type[ExtractionArea]
+    extraction_strategy: Type[ExtractionStrategyBase]
 
     @staticmethod
     def from_json(json_obj):
@@ -94,6 +95,35 @@ class LayoutConfig(BaseModel):
             deck_configs = [DeckConfig.from_json(deck) for deck in json_obj]
         )
 
+class Platform(str, Enum):
+    WINDOWS = "windows"
+    MAC = "mac"
+    UNKNOWN = "unknown"
+
+    @staticmethod
+    def detect():
+        if platform in ["win32", "win64"]:
+            return Platform.WINDOWS
+        elif platform == "darwin":
+            return Platform.MAC
+        else:
+            return Platform.UNKNOWN
+
+class ConfigDefaults(BaseModel):
+    screen_width: int
+    screen_height: int
+    mixer_width: int
+    platform: Platform
+
+    @staticmethod
+    def from_json(json_obj):
+        return ConfigDefaults(
+            screen_width = json_obj["screen_width"],
+            screen_height = json_obj["screen_height"],
+            mixer_width = json_obj["mixer_width"],
+            platform = json_obj["platform"]
+        )
+
 class Config(BaseModel):
     """Extraction strategies for a rekordbox session.
 
@@ -102,38 +132,18 @@ class Config(BaseModel):
         layout (LayoutExtraction): Extraction strategy for layout string.
         layout_configs (list of LayoutConfig): Extraction strategies for each layout.
     """
-    extraction_strategy_factory: ExtractionStrategyFactory
-    mode: ModeExtraction
-    layout: LayoutExtraction
+    mode: Property
+    layout: Property
     layout_configs: Dict[str, LayoutConfig]
+    config_defaults: ConfigDefaults
 
     @staticmethod
     def from_json(json_obj):
-        scaler = Scaler(
-            screen_width = json_obj["screen_width"],
-            screen_height = json_obj["screen_height"],
-            mixer_width = json_obj["mixer_width"]
-        )
         return Config(
-            extraction_strategy_factory = ExtractionStrategyFactory(
-                scaler = scaler
-            ),
-            mode=ModeExtraction.from_json(json_obj["mode"]),
-            layout=LayoutExtraction.from_json(json_obj["layout"]),
+            mode=Property.from_json(json_obj["mode"]),
+            layout=Property.from_json(json_obj["layout"]),
             layout_configs={
                 name: LayoutConfig.from_json(name, deck_layouts) for name, deck_layouts in json_obj["layout_configs"].items()
-            }
+            },
+            config_defaults=ConfigDefaults.from_json(json_obj["config_defaults"])
         )
-
-    def get_extraction_strategies(self, image) -> Optional[ExtractionStrategies]:
-        """Extracts mode and layout and returns matching ExtractionStrategies object, or None."""
-        mode_str = self.mode.extract_from_image(image)
-        if mode_str != "PERFORMANCE":
-            return None
-
-        layout_str = self.layout.extract_from_image(image)
-        if layout_str in self.layout_configs:
-            width, _ = image.size
-            return self.extraction_strategy_factory.get_strategies(width, self.layout_configs[layout_str])
-
-        return None
