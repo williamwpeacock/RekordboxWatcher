@@ -2,11 +2,18 @@
 pydantic
 
 # Image taking and handling
-pyautogui
+PyAutoGUI
 opencv-python
-PIL
+pillow
 
 # Data processing
 pytesseract
 fuzzywuzzy
 numpy
+
+# Testing
+pytest
+
+# Other
+psutil
+
