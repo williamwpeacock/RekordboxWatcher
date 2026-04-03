@@ -3,7 +3,7 @@ pydantic
 
 # Image taking and handling
 pyautogui
-cv2
+opencv-python
 PIL
 
 # Data processing
