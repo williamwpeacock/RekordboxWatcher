@@ -2,99 +2,9 @@ from typing import List, Optional, Dict
 from pydantic import BaseModel
 
 from .extraction import *
-from .layout import Config, Platform, AnchorSide
+from .scaler import ScaledAnchorPoints, Scaler, ScalerFactory
+from .layout import Config, Platform
 from .schema import Snapshot, DeckSnapshot, EQSnapshot, SongIdentifier, LinkMethod, Time
-
-# Scaling
-
-class ScaledAnchorPoints(BaseModel):
-    deck_left_pos: int
-    deck_right_pos: int
-    mixer_left_pos: int
-    mixer_right_pos: int
-    y_offset: int
-
-    def _anchor_to(self, left_pos, right_pos, property_config):
-        result = [[0, 0], [0, 0]]
-
-        left_x = property_config.bb[0][0]
-        if property_config.left_anchor == AnchorSide.LEFT:
-            result[0][0] = left_pos + left_x
-        elif property_config.left_anchor == AnchorSide.RIGHT:
-            result[0][0] = right_pos + left_x
-
-        result[0][1] = (property_config.bb[0][1] + self.y_offset)
-
-        right_x = property_config.bb[1][0]
-        if property_config.right_anchor == AnchorSide.LEFT:
-            result[1][0] = left_pos + right_x
-        elif property_config.right_anchor == AnchorSide.RIGHT:
-            result[1][0] = right_pos + right_x
-
-        result[1][1] = (property_config.bb[1][1] + self.y_offset)
-
-        return result
-
-    def anchor_to_deck(self, property_config):
-        return self._anchor_to(self.deck_left_pos, self.deck_right_pos, property_config)
-
-    def anchor_to_mixer(self, property_config):
-        return self._anchor_to(self.mixer_left_pos, self.mixer_right_pos, property_config)
-
-class Scaler(BaseModel):
-    screen_width: int
-    screen_height: int
-    mixer_width: int
-    y_offset: int
-
-    @property
-    def default_deck_width(self):
-        return (self.screen_width - self.mixer_width) / 2
-
-    @staticmethod
-    def get_y_offset(platform):
-        if platform == Platform.WINDOWS:
-            return 0
-        elif platform == Platform.MAC:
-            return -45
-        else:
-            raise ValueError(f"Unkown Y offset for platform: {platform}")
-
-    def calculate_scaling_factor(self, current_screen_width):
-        return (current_screen_width - self.mixer_width) / (self.screen_width - self.mixer_width)
-
-    def calculate_current_deck_width(self, current_screen_width):
-        scaling_factor = self.calculate_scaling_factor(current_screen_width)
-        return scaling_factor * self.default_deck_width
-
-    def get_mixer_x_pos(self, current_screen_width):
-        return self.calculate_current_deck_width(current_screen_width)
-
-    def get_deck_x_pos(self, deck_num, current_screen_width):
-        is_left_deck = (deck_num % 2 == 0)
-        if is_left_deck:
-            return 0
-
-        return self.calculate_current_deck_width(current_screen_width) + self.mixer_width
-
-    def get_scaled_anchor_points(self, deck_num, current_screen_width):
-        deck_left_pos = self.get_deck_x_pos(deck_num, current_screen_width)
-        deck_right_pos = deck_left_pos + self.calculate_current_deck_width(current_screen_width)
-        mixer_left_pos = self.get_mixer_x_pos(current_screen_width)
-        mixer_right_pos = mixer_left_pos + self.mixer_width
-
-        return ScaledAnchorPoints(
-            deck_left_pos = int(deck_left_pos),
-            deck_right_pos = int(deck_right_pos),
-            mixer_left_pos = int(mixer_left_pos),
-            mixer_right_pos = int(mixer_right_pos),
-            y_offset = self.y_offset
-        )
-
-class ScalerFactory(BaseModel):
-    pass
-
-# Extractor
 
 class DeckExtractor(BaseModel):
     song: Optional[TextExtraction] = None
@@ -199,11 +109,11 @@ class DeckExtractor(BaseModel):
 class Extractor(BaseModel):
     decks: List[DeckExtractor]
 
-    def __init__(self, scaler: "Scaler", screen_width: int, deck_configs):
+    def __init__(self, scaler: Scaler, deck_configs):
         super().__init__(decks=[])
 
         for deck_num, deck_config in enumerate(deck_configs):
-            anchor_points = scaler.get_scaled_anchor_points(deck_num, screen_width)
+            anchor_points = scaler.get_scaled_anchor_points(deck_num)
             self.decks.append(
                 DeckExtractor(
                     anchor_points = anchor_points,
@@ -247,19 +157,18 @@ class Extractor(BaseModel):
 class ExtractorFactory(BaseModel):
     """Get or create Extractor for screen width and layout."""
     config: Config
-    scaler: Scaler
-    _extractor_map: Dict[int, Dict[str, Extractor]]
+    scaler_factory: ScalerFactory
+    _extractor_map: Dict[Scaler, Extractor]
 
     def __init__(self, config: Config):
-        return ExtractorFactory(
-            scaler = Scaler(
-                screen_width = config.config_defaults.screen_width,
-                screen_height = config.config_defaults.screen_height,
-                mixer_width = config.config_defaults.mixer_width
+        super().__init__(
+            config = config,
+            scaler_factory = ScalerFactory(
+                config_defaults = config.config_defaults
             )
         )
 
-    def _get_layout_config(self, image):
+    def _get_layout_config(self, scaler, image):
         mode_property = self.config.mode
 
         extraction_cls = mode_property.extraction_strategy
@@ -283,17 +192,19 @@ class ExtractorFactory(BaseModel):
         return None
 
     def get_extractor(self, image) -> Extractor:
+        current_width, current_height = image.size
+        scaler = self.scaler_factory.get_scaler(current_width, current_height, Platform.detect())
+
         if not hasattr(self, "_extractor_map"):
             self._extractor_map = {}
 
-        width, _ = image.size
-        if width not in self._extractor_map:
-            self._extractor_map[width] = {}
+        if scaler not in self._extractor_map:
+            self._extractor_map[scaler] = {}
 
-        layout_config = self._get_layout_config(image)
+        layout_config = self._get_layout_config(scaler, image)
         layout_str = layout_config.name
 
-        if layout_str not in self._extractor_map[width]:
-            self._extractor_map[width][layout_str] = Extractor(self.scaler, width, layout_config.deck_configs)
+        if layout_str not in self._extractor_map[scaler]:
+            self._extractor_map[scaler][layout_str] = Extractor(scaler, layout_config.deck_configs)
 
-        return self._extractor_map[width][layout_str]
+        return self._extractor_map[scaler][layout_str]
